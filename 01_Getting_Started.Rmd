@@ -1,0 +1,121 @@
+---
+title: "01_Getting_Started"
+author: "April Wright"
+date: "5/31/2020"
+output: html_document
+---
+
+
+## Recap
+
+Last session, we installed RevBayes, and an interface to use RevBayes in RStudio. In the following exercise, you can either open RevBayes and type in the commands, or you can run the commands in KnitR in the Rstudio interface. If you download this file, it is written as a KnitR document, which can be read in by RStudio as-is. If you'd like to do this this way, load the RevKnitr package.
+
+```{r}
+library(RevKnitr)
+```
+
+
+In this tutorial, we will be using a dataset of Cinctans, which are mid-Cambrian Echinoderms. The data come from [Zamora et al 2013](https://onlinelibrary.wiley.com/doi/full/10.1111/j.1475-4983.2012.01207.x). To get started, we'll read in the data. In RevBayes, reading in data isn't done by the type of data (molecular, morphological), but by if the data are discrete or not. Because of this, we will use the function `readDiscreteCharacterData`. If we had continuous data (such as measurements in length or weight, or landmarks), we would use the function `readContinuousCharacterData`.
+
+```{rb}
+morph <- readDiscreteCharacterData("data/Cinctans.nex")
+```
+This command may look familiar to R users. Much as in R, in Rev, the object to the left-hand side of the assignment operator will take on the value of the output from the function to the right. The output of the `readDiscreteCharacterData` function is a single dataset, read from our data file.
+
+Once we've read in the data, we can get some basic information about it. For example, simply printing the data :
+
+```{rb, engine.path="~/software/rb"}
+morpho
+```
+
+Output:
+
+```
+
+   Standard character matrix with 27 taxa and 60 characters
+   ========================================================
+   Origination:                   Cinctans.nex
+   Number of taxa:                27
+   Number of included taxa:       27
+   Number of characters:          60
+   Number of included characters: 60
+   Datatype:                      Standard
+  ```
+  
+What we can see here is that we have 27 taxa and 60 characters of morphological data from the Cinctans. You'll also see that it has been understood as "Standard" data. Many phylogenetic programs refer to morphological data as "Standard".
+
+Next, we can view core statistics about the data object. Much like in R, the command `str` shows us key information about the data object:
+
+```{rb}
+str(morph)
+```
+```
+   _variable     = morph
+   _RevType      = AbstractHomologousDiscreteCharacterData
+   _value        =
+   Standard character matrix with 27 taxa and 60 characters
+   ========================================================
+   Origination:                   Cinctans.nex
+   Number of taxa:                27
+   Number of included taxa:       27
+   Number of characters:          60
+   Number of included characters: 60
+   Datatype:                      Standard
+
+
+   _dagType      = Constant node
+   _children     = [  ]
+   ```
+   
+   We can see that morph is of `type` AbstractHomologousDiscreteCharacterData. This doesn't mean much for you, but if you wanted to look up what methods are available to work with this datatype, you can do that via the RevBayes [documentation](https://revbayes.github.io/documentation/AbstractHomologousDiscreteCharacterData.html). The type of the method governs the functions we can use with it. We'll return to this in a moment.
+   
+You'll also notice that the data are considered a `constant node`. RevBayes implements a graphical modeling framework in which the phylogentic model and data are considered to be an interdependent structure. You can read more about this framework [here](https://academic.oup.com/sysbio/article/65/4/726/1753608), and a further tutorial on this idea is [here](https://revbayes.github.io/tutorials/intro/graph_models.html). A constant node is a node that is not inferred in our estimation. Data fit that description well - they do not change through the course of the analysis.
+
+If you had a look at the RevBayes documentation, you will have seen that there are many useful ways to look at the data. For example, we can do simple verifications that the data are what we think they should be. 
+
+```{rb}
+morph.taxa()
+morph.nchar()
+morph.ntaxa()
+```
+
+These will return the number of taxa, characters, and the names of the characters. We can view the matrix as plain text:
+
+```{rb}
+morph.show()
+
+```
+
+We can also do some more sophisticated analyses of the matrix. For example, if we needed to know how much missing data we have in some focal taxon in our analysis, we can query this information out:
+
+```{rb}
+ morph.percentageMissing("Sucocystis_theronensis")
+
+```
+
+Or we could do this for the whole matrix. Perhaps we would like to know how many taxa have over 50\% missing data:
+
+```{rb}
+morph.numTaxaMissingSequence(.5)
+```
+
+```
+22
+```
+
+That is most of our taxa! Perhaps we are interested in removing taxa that have more than 90% missing data. We could do this via a loop. This loop structure may look familiar to R users.
+
+```{rb}
+
+for (taxon in morph.taxa()){
+if (morph.percentageMissing(taxon.getName()) > .9){
+morph.removeTaxa(taxon.getName())
+ }
+}
+
+```
+
+In this loop, we look at each taxon in out dataset. For each taxon, we calculate how much missing data it has. We remove the missing data if there is over 90%. In this case, we use the `getName` function of the taxon object to search each taxon by name (as opposed to any other attributes it might have, like age). Functions available to taxon object can be seen in [the documentation](https://revbayes.github.io/documentation/taxon.html). If you've completed this, printing morph to the screen will reflect 22 taxa.
+
+That's all for this time. I hope you've enjoyed this look at managing data and taxa in RevBayes. Next week, we'll set up a simple model-based analysis using RevBayes.
+
